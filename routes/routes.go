@@ -6,7 +6,7 @@ import (
   "net/http"
   "github.com/gorilla/mux"
   "github.com/jinzhu/gorm"
-  "../../gormy-backend/models"
+  "practice/gormy/gormy-backend/models"
 )
 
 var database *gorm.DB
@@ -39,89 +39,46 @@ func CreateSneaker(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllStoreBrands(w http.ResponseWriter, r *http.Request) {
-  var store models.Store
-  var storeBrands []models.Brand
-  storeId := mux.Vars(r)["storeId"]
-
-  if err := database.Find(&store, storeId).
-                      Model(&store).
-                      Related(&storeBrands).Error; err != nil {
+  var brands []models.Brand
+  if err := database.Preload("Stores").Find(&brands).Error; err != nil {
     panic(err)
   }
-
-  json.NewEncoder(w).Encode(&storeBrands)
+  json.NewEncoder(w).Encode(&brands)
 }
 
-// Get all sneakers a brand has
 func GetAllBrandSneakers(w http.ResponseWriter, r *http.Request) {
-  var brand models.Brand
-  var brandSneakers []models.Sneaker
-  brandId := mux.Vars(r)["brandId"]
-
-  if err := database.Find(&brand, brandId).
-                      Model(&brand).
-                      Related(&brandSneakers).Error; err != nil {
+  var sneakers []models.Sneaker
+  if err := database.Preload("Brand").Find(&sneakers).Error; err != nil {
     panic(err)
   }
-
-  json.NewEncoder(w).Encode(&brandSneakers)
+  json.NewEncoder(w).Encode(&sneakers)
 }
 
-// Get stores carrying a specific sneaker
 func GetSpecificSneakerFromStore(w http.ResponseWriter, r *http.Request) {
-  var store models.Store
-  var brand models.Brand
   var sneakers models.Sneaker
-  storeId := mux.Vars(r)["storeId"]
-  brandName := mux.Vars(r)["brandName"]
-  sneakerModel := mux.Vars(r)["sneakerModel"]
+  sneakerId := mux.Vars(r)["sneakerId"]
 
-  tx := database.Begin()
-  if err := tx.Select("id").
-                Where("ID = ?", storeId).
-                Find(&store).Error; err != nil {
+  err := database.Preload("Store").First(&sneakers, "sneaker_id = ?", sneakerId).Error;
+  if err != nil {
     panic(err)
-    tx.Rollback()
-  }
-  if err := tx.Select("id").
-                Where("store_id = ? AND name = ?", &store.ID, brandName).
-                Find(&brand).Error; err != nil {
-    panic(err)
-    tx.Rollback()
-  }
-  if err := tx.Select("sneaker_model, price, supply").
-                Where("brand_id = ? AND sneaker_model = ?", &brand.ID, sneakerModel).
-                Find(&sneakers).Error; err != nil {
-    panic(err)
-    tx.Rollback()
   }
 
-  tx.Commit()
   json.NewEncoder(w).Encode(&sneakers)
 }
 
 // Get brand that owns a certain sneaker
 func GetSneakerBrand(w http.ResponseWriter, r *http.Request) {
-  var sneaker models.Sneaker
   var brand models.Brand
-  sneakerModel := mux.Vars(r)["sneakerModel"]
+  brandId := mux.Vars(r)["brandId"]
 
-  tx := database.Begin()
-  if err := tx.Where("sneaker_model = ?", sneakerModel).Find(&sneaker).Error; err != nil {
+  err := database.Preload("Sneakers").First(&brand, "brand_id = ?", brandId).Error;
+  if err != nil {
     panic(err)
-    tx.Rollback()
-  }
-  if err := tx.Where("ID = ?", &sneaker.BrandID).
-                Find(&brand).Error; err != nil {
-    panic(err)
-    tx.Rollback()
   }
 
-  tx.Commit()
   json.NewEncoder(w).Encode(&brand)
 }
 
-// Delete brand (and the sneakers connect to it) from a certain store
 func DeleteBrand(w http.ResponseWriter, r *http.Request) {
     var brand models.Brand
     brandId := mux.Vars(r)["brandId"]
@@ -147,14 +104,10 @@ func GetRouter(db *gorm.DB) *mux.Router {
   router.HandleFunc("/create/store", CreateStore).Methods("POST")
   router.HandleFunc("/create/brand", CreateBrand).Methods("POST")
   router.HandleFunc("/create/sneaker", CreateSneaker).Methods("POST")
-  router.HandleFunc("/store/brands/all/{storeId}", GetAllStoreBrands).Methods("GET")
-  router.HandleFunc("/brand/sneakers/all/{brandId}", GetAllBrandSneakers).Methods("GET")
-  router.HandleFunc("/store/sneakers/{storeId}", GetSpecificSneakerFromStore).
-          Queries("brand", "{brandName}", "model", "{sneakerModel}").
-          Methods("GET")
-  router.HandleFunc("/sneakers/brand", GetSneakerBrand).
-          Queries("model", "{sneakerModel}").
-          Methods("GET")
+  router.HandleFunc("/store/brands/all", GetAllStoreBrands).Methods("GET")
+  router.HandleFunc("/brand/sneakers/all", GetAllBrandSneakers).Methods("GET")
+  router.HandleFunc("/store/sneakers/{sneakerId}", GetSpecificSneakerFromStore).Methods("GET")
+  router.HandleFunc("/sneakers/brand/{brandId}", GetSneakerBrand).Methods("GET")
   router.HandleFunc("/brand/delete/{brandId}", DeleteBrand).Methods("GET")
   return router
 }

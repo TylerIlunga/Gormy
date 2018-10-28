@@ -1,32 +1,51 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+  "time"
+  "github.com/jinzhu/gorm"
+)
 
 type Store struct {
-  gorm.Model
+  StoreID uint `gorm:"primary_key:true"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
   Name string
-  Brands []Brand
+  Brands []Brand `gorm:"many2many:brand_stores;association_foreignkey:BrandID;foreignkey:StoreID"`
+  BrandID uint
+  Sneakers []Sneaker `gorm:"foreignkey:BrandID;association_foreignkey:SneakerID"`
+  SneakerID uint
 }
 
 type Brand struct {
-  gorm.Model
+  BrandID uint `gorm:"primary_key:true"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
   Name string
-  Sneakers []Sneaker
+  Stores []Store `gorm:"many2many:brand_stores;association_foreignkey:StoreID;foreignkey:BrandID"`
   StoreID uint
+  Sneakers []Sneaker `gorm:"foreignkey:BrandID;association_foreignkey:SneakerID"`
+  SneakerID uint
 }
 
 type Sneaker struct {
-  gorm.Model
-  BrandID uint
-  SneakerModel string
+  SneakerID uint `gorm:"primary_key:true"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
   Price int
   Supply int
+  Brand Brand `gorm:"foreignkey:SneakerID;association_foreignkey:BrandID"`
+  BrandID uint
+  Store Store `gorm:"foreignkey:SneakerID;association_foreignkey:StoreID"`
+  StoreID uint
 }
 
 func (brand *Brand) AfterDelete(scope *gorm.Scope) error {
   var sneaker Sneaker
-  if err := scope.DB().Model(sneaker).Where("id=?", brand.ID).Delete(sneaker).Error; err != nil {
-    panic(nil)
+  if err := scope.DB().Model(sneaker).Where("id=?", brand.BrandID).Delete(sneaker).Error; err != nil {
+    panic(err)
   }
   return nil
 }
