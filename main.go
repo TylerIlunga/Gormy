@@ -40,6 +40,5 @@ func listen() {
 }
 
 func main() {
-  fmt.Println("Running...")
   listen()
 }
