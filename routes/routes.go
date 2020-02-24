@@ -98,8 +98,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func GetRouter(db *gorm.DB) *mux.Router {
   database = db
   router := mux.NewRouter().StrictSlash(true)
-  router.PathPrefix("/static/").
-          Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("/static/"))))
+  router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("/static/"))))
   router.HandleFunc("/", HomeHandler).Methods("GET")
   router.HandleFunc("/create/store", CreateStore).Methods("POST")
   router.HandleFunc("/create/brand", CreateBrand).Methods("POST")
