@@ -7,9 +7,9 @@ import (
 
 type Store struct {
   StoreID uint `gorm:"primary_key:true"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+  CreatedAt time.Time
+  UpdatedAt time.Time
+  DeletedAt *time.Time
   Name string
   Brands []Brand `gorm:"many2many:brand_stores;association_foreignkey:BrandID;foreignkey:StoreID"`
   BrandID uint
@@ -19,9 +19,9 @@ type Store struct {
 
 type Brand struct {
   BrandID uint `gorm:"primary_key:true"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+  CreatedAt time.Time
+  UpdatedAt time.Time
+  DeletedAt *time.Time
   Name string
   Stores []Store `gorm:"many2many:brand_stores;association_foreignkey:StoreID;foreignkey:BrandID"`
   StoreID uint
@@ -31,9 +31,9 @@ type Brand struct {
 
 type Sneaker struct {
   SneakerID uint `gorm:"primary_key:true"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
+  CreatedAt time.Time
+  UpdatedAt time.Time
+  DeletedAt *time.Time
   Price int
   Supply int
   Brand Brand `gorm:"foreignkey:SneakerID;association_foreignkey:BrandID"`
